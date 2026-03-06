@@ -1,4 +1,4 @@
-![[Artificial.png]]
+![Artificial](Artificial.png)
 # 📜 HTB Artificial – Pentest Report
 
 Machine Name: Artificial  
