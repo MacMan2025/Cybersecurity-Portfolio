@@ -1,1 +1,436 @@
+# Cloud Security Project – AWS WordPress Hardening
 
+## Abstract
+
+With the rise of cloud-based services like AWS it brings new cybersecurity risks. Leading causes of breaches within the cloud are through misconfigured data, non-encrypted data-in-transit and inadequately configured access controls. The purpose of this project was successfully implementing a WordPress deployment on AWS and securing the instance through open-source security resources and native AWS security. The end goal was to create a domain (www.cloudsecurityproject.live) with HTTPS encryption, MFA and testing of the domain’s security. 
+
+---
+
+# 1. Introduction
+
+With the rise of cloud-based services like AWS it brings new cybersecurity risks. Leading causes of breaches within the cloud are through misconfigured data, non-encrypted data-in-transit and inadequately configured access controls.
+
+The purpose of this project was successfully implementing a WordPress deployment on AWS and securing the instance through open-source security resources and native AWS security.
+
+The end goal was to create a domain with HTTPS encryption, MFA and testing of the domain’s security.
+
+---
+
+# 2. Approach & Project Planning
+
+## Project Objectives
+
+1. Provision a Cloud VM in AWS  
+2. Configure LAMP stack and WordPress application on AWS instance  
+3. Configure domain name  
+4. Secure with HTTPS and publicly trusted certificate  
+5. Application/network layer hardening  
+6. Penetration testing with industry standards/tools  
+7. Reporting, findings, risk assessment and remediations  
+
+## Project Timeline and Steps
+
+1. AWS (VPC) with public/private subnets  
+2. Create two EC2 instances, Cloud Security Project & Bastion  
+3. LAMP stack & WordPress install  
+4. Domain name and HTTPS  
+5. Wordfence Security plugin on WordPress  
+6. Wireshark to prove HTTPs is up and running  
+7. Pen Testing Nmap/Nikto to expose vulnerabilities  
+8. Final testing & report writing  
+9. Project Presentation video  
+
+---
+
+# 3. Network Architecture
+
+## VPC and Network Topology
+
+A VPC was used instead of one EC2 instance because a VPC offers more control in terms of network segregation, routing and security.
+
+Within the VPC, public and private subnets can be created as needed. Only the web server was intended to be accessible publicly as none of the backend servers were intended for public access.
+
+Additionally, with custom route tables and security groups, control for network traffic could be established which decreases the risk of external exposure. 
+
+![Network Topology](images/network-topology.png)
+
+---
+
+## Bastion Host
+
+A bastion host was implemented for secure administrative access to the cloud environment.
+
+The bastion host is located on Public Subnet B (10.0.16.0/20, us-east-1b) of the custom VPC with an associated elastic IP address (18.214.134.12) and only inbound SSH (22) access from my own trusted IP address.
+
+The WordPress EC2 instance located in Public Subnet A maintains SSH access permissions from the bastion security group, and additional inbound HTTPS (443) and HTTP (80) access permissions from public Internet.
+
+Public access to the administrative capabilities of the web server is restricted, meaning that exposure to attacks is reduced.
+
+Access is secured via key authentication with the deployed project key pair.
+
+Access is granted through the bastion host with an effective SSH connection:
+
+
+This allows secure maintenance without public access to the application features.
+
+---
+
+## Subnets
+
+The VPC consists of four subnets across two availability zones (us-east-1a and us-east-1b) for network segregation.
+
+Public Subnet A has the first EC2 Instance, the hardened WordPress web server and Public Subnet B has the Bastion EC2 Instance.
+
+These two subnets are public to have Internet access through an Internet Gateway but HTTPS and SSH access are restricted with AWS Security Groups.
+
+Private Subnets A and B are reserved for services that may be exposed to the Internet at a later stage such as database or other backend services that do not need to be publicly available.
+
+This subnet structure enhances security while enforcing the principle of least privilege and aligns with AWS best practices for cloud security architecture. 
+
+---
+
+## Security Groups
+
+Two additional Security Groups were set up to create more secure network access for the Cloud Security Project VPC.
+
+### Cloud Security Final Security Group
+
+Implemented on the WordPress EC2 instance.
+
+Allows:
+
+- HTTPS (443)
+- HTTP (80)
+
+From anywhere (0.0.0.0/0)
+
+Allows:
+
+- SSH (22)
+
+Only from the Bastion Final security group.
+
+### Bastion Final Security Group
+
+Allows:
+
+- SSH (22)
+
+Only from one trusted IP address.
+
+This ensures the Bastion host must be accessed first before connecting to the WordPress EC2 instance.
+
+---
+
+## VPC Endpoint
+
+A VPC Gateway Endpoint was created which means the AWS network can connect to Amazon S3 without public internet access.
+
+The endpoint connects the VPC to S3 in the us-east-1 region.
+
+Anything within Private Subnet A or Private Subnet B can communicate with S3 over AWS’s internal network.
+
+---
+
+# 4. Tools
+
+## Tools Used
+
+### Amazon Virtual Private Cloud (VPC)
+
+Allows launching AWS resources in an isolated virtual network.
+
+### AWS Security Groups
+
+Two security groups created:
+
+- Cloud Security Final
+- Bastion Final
+
+### Amazon EC2 (Amazon Linux 2023)
+
+Instances used:
+
+- WordPress Web Server
+- Bastion Host
+
+### Let's Encrypt
+
+Certificate authority providing SSL/TLS certificates.
+
+### Certbot
+
+ACME client used to request and install certificates.
+
+Configured:
+
+- HTTPS redirection
+- TLS encryption
+
+### Wordfence Security Plugin
+
+Provides:
+
+- WAF
+- Intrusion detection
+- MFA
+- Brute force protection
+
+### Google Authenticator
+
+Used for TOTP based MFA authentication.
+
+### Nmap
+
+Used for:
+
+- Network scanning
+- Port enumeration
+
+### Nikto
+
+Used for:
+
+- Web vulnerability scanning
+- Misconfiguration detection
+
+### Wireshark
+
+Used to verify:
+
+- TLS 1.3 handshake
+- Encrypted traffic
+
+### Datadog
+
+Used for:
+
+- Performance monitoring
+- Log analysis
+- Apache metrics dashboard
+
+---
+
+# 5. Methodology
+
+## AWS Setup
+
+A custom VPC named:
+
+Was created with:
+
+Public Subnet A – WordPress EC2  
+Public Subnet B – Bastion Host  
+
+Private Subnets A & B reserved for backend services.
+
+Security groups restricted access appropriately.
+
+An S3 VPC Endpoint allowed internal communication with S3.
+
+---
+
+## LAMP Stack
+
+The LAMP stack consists of:
+
+- Apache
+- MariaDB
+- PHP
+
+This stack hosts the WordPress site.
+
+Apache was installed and configured.
+
+MariaDB provides the WordPress database.
+
+PHP enables dynamic content.
+
+An `info.php` file was used to confirm configuration and later deleted for security.
+
+---
+
+## WordPress Blog
+
+WordPress was installed and configured.
+
+Security enhancements included:
+
+- Wordfence WAF
+- MFA via Google Authenticator
+
+A login requires a TOTP code generated on a trusted device.
+
+---
+
+## HTTPS Implementation
+
+A domain name was registered:
+www.cloudsecurityproject.live
+
+
+DNS A records mapped the domain to the EC2 public IP.
+
+Let's Encrypt and Certbot were used to install a TLS certificate.
+
+Wireshark confirmed TLS 1.3 handshake encryption.
+
+---
+
+## Datadog Monitoring
+
+Datadog agent was installed on the EC2 instance.
+
+Configuration allowed:
+
+- Apache metrics
+- System logs
+
+Data is visualized through the Datadog dashboard.
+
+---
+
+# 6. Technical Testing Approach
+
+Security testing was performed using:
+
+- Nmap
+- Nikto
+
+Baseline scans were taken before hardening and compared with scans after hardening.
+
+---
+
+## Nmap Baseline Scan
+
+Results showed expected ports:
+
+80 HTTP  
+443 HTTPS
+
+
+Port 22 was not exposed publicly due to Bastion configuration.
+
+---
+
+## HTTP Enumeration
+
+Detected:
+
+- Apache version disclosure
+- Missing security headers
+- TRACE method enabled
+- Directory listing
+
+---
+
+## Hardening Measures
+
+Changes applied to:
+/etc/httpd/conf/httpd.conf
+
+
+Hardening included:
+
+- Disable TRACE
+- Remove server version
+- Disable directory indexing
+- Add security headers
+
+---
+
+## Nikto Baseline Scan
+
+Identified:
+
+- Missing headers
+- Directory listing
+- TRACE method enabled
+- WordPress API exposure
+
+---
+
+## Nikto Post Hardening Scan
+
+Second scan showed:
+
+- reduced vulnerabilities
+- WAF activity detected
+
+Wordfence blocked over 100 malicious requests.
+
+---
+
+# 7. Findings & Risk Ratings
+
+Risk levels were categorized as:
+
+- Low
+- Medium
+- High
+
+Based on CIA triad impact:
+
+- Confidentiality
+- Integrity
+- Availability
+
+Main vulnerabilities identified:
+
+- Apache version disclosure
+- Missing security headers
+- TRACE method enabled
+- Directory listing enabled
+- WordPress information disclosure
+
+All were mitigated through configuration hardening.
+
+---
+
+# 8. Challenges & Limitations
+
+## Challenges
+
+SSL certificate hostname mismatch during Nikto scan.
+
+Incorrect VPC configuration caused Bastion connectivity issues.
+
+Datadog agent required reinstall due to API configuration error.
+
+---
+
+## Limitations
+
+Use of free tools:
+
+- Nmap
+- Nikto
+- Wordfence free edition
+
+Manual hardening could introduce human error.
+
+Production environments would require:
+
+- Nessus
+- BurpSuite Pro
+- AWS WAF
+- automated patch management.
+
+---
+
+# 9. Conclusion
+
+This project successfully deployed and hardened a secure WordPress application on AWS.
+
+Key security implementations included:
+
+- VPC segmentation
+- Bastion host
+- HTTPS encryption
+- Wordfence WAF
+- MFA
+- Datadog monitoring
+
+Baseline scans revealed vulnerabilities which were mitigated through system hardening.
+
+The project provided hands-on experience deploying a secure cloud hosted web application from start to finish. 
